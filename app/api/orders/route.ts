@@ -73,7 +73,10 @@ export async function GET(request: NextRequest) {
     // Generate pre-signed URLs for previews and designs
     const ordersWithUrls = await Promise.all(
       paginatedOrders.map(async (order: any) => {
-        const orderObj: any = { ...order };
+        const orderObj: any = {
+          ...order,
+          _id: String(order._id) // Ensure _id is always a string
+        };
 
         if (order.preview) {
           try {

@@ -203,12 +203,17 @@ export default function OrdersPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  orders.map((order) => (
-                    <TableRow
-                      key={String(order._id)}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => router.push(`/orders/${order._id}`)}
-                    >
+                  orders.map((order) => {
+                    const orderId = String(order._id);
+                    return (
+                      <TableRow
+                        key={orderId}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => {
+                          console.log('Navigating to order:', orderId);
+                          router.push(`/orders/${orderId}`);
+                        }}
+                      >
                       <TableCell className="text-sm">
                         {formatDate(order.createdAt)}
                       </TableCell>
@@ -235,7 +240,8 @@ export default function OrdersPage() {
                         </Badge>
                       </TableCell>
                     </TableRow>
-                  ))
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
