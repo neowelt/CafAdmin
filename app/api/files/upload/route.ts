@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 const ADMIN_API_BASE_URL = process.env.ADMIN_API_BASE_URL || "";
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || "";
 
