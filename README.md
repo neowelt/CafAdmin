@@ -175,9 +175,10 @@ npm start
 - `GET /api/orders/:id` - Get order by ID
 - `POST /api/orders/:id/complete` - Complete order
 
-### Upload
-- `POST /api/upload` - Upload file to S3
-- `GET /api/upload` - Generate pre-signed upload URL
+### File Management
+- `POST /api/files/upload` - Upload file directly to S3 (uses AWS SDK v3)
+- `POST /api/files/cache/invalidate` - Invalidate CloudFront cache (uses AWS SDK v3)
+- `POST /api/upload` - Legacy upload endpoint (deprecated)
 
 ## Database Collections
 
@@ -205,6 +206,7 @@ npm start
 - **UI Framework**: shadcn/ui instead of MudBlazor
 - **Database Models**: Maintained exact same MongoDB schema
 - **S3 File Paths**: Same structure as Blazor version
+- **File Uploads**: Direct S3 uploads via AWS SDK v3 (no FastAPI proxy needed)
 
 ## Troubleshooting
 
@@ -225,6 +227,28 @@ aws configure list
 # Check S3 bucket permissions
 aws s3 ls s3://coverartbucket
 ```
+
+## Recent Changes
+
+### 2025-12-08: Fixed Image Corruption - Direct S3 Uploads
+
+**Problem**: Images uploaded to S3 appeared corrupted/not displaying in browsers.
+
+**Root Cause**: The FastAPI backend proxy was losing the `Content-Type` metadata when forwarding FormData, causing images to be uploaded with `application/octet-stream` instead of `image/jpeg`.
+
+**Solution**: Removed the FastAPI proxy entirely and implemented direct S3 uploads from Next.js API routes using AWS SDK v3.
+
+**Changes**:
+- Installed `@aws-sdk/client-s3` and `@aws-sdk/client-cloudfront`
+- Updated `/api/files/upload` to upload directly to S3 with proper `ContentType` header
+- Updated `/api/files/cache/invalidate` to invalidate CloudFront cache directly
+- Frontend continues to pass `content_type` in FormData for explicit type specification
+
+**Benefits**:
+- Eliminates proxy overhead and potential data corruption
+- Faster uploads (one less network hop)
+- Proper Content-Type headers preserved
+- No backend deployment required for file upload changes
 
 ## License
 
