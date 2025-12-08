@@ -9,6 +9,8 @@ frontend:
         - echo "ADMIN_API_BASE_URL=$ADMIN_API_BASE_URL" >> .env.production
         - echo "ADMIN_API_KEY=$ADMIN_API_KEY" >> .env.production
         - echo "NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME" >> .env.production
+        - echo "APP_AWS_REGION=$APP_AWS_REGION" >> .env.production
+        - echo "CLOUDFRONT_DISTRIBUTION_ID=$CLOUDFRONT_DISTRIBUTION_ID" >> .env.production
         - npm run build
   artifacts:
     baseDirectory: .next

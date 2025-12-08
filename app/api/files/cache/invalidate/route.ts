@@ -11,11 +11,11 @@ const CLOUDFRONT_DISTRIBUTION_ID = process.env.CLOUDFRONT_DISTRIBUTION_ID || "";
 // Uses IAM role when running on AWS (no credentials provided)
 // Falls back to access keys for local development
 const cloudFrontClient = new CloudFrontClient({
-  region: process.env.AWS_REGION || "eu-north-1",
-  credentials: process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
+  region: process.env.APP_AWS_REGION || "eu-north-1",
+  credentials: process.env.APP_AWS_ACCESS_KEY_ID && process.env.APP_AWS_SECRET_ACCESS_KEY
     ? {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY,
       }
     : undefined, // Use default credential chain (IAM role on AWS)
 });

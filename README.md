@@ -51,19 +51,21 @@ DATABASE_NAME=cafapp
 
 ### AWS Configuration
 
+**Important**: AWS Amplify does not allow environment variables starting with `AWS_`. Use the `APP_AWS_*` prefix instead.
+
 **For Local Development:**
 ```bash
-AWS_REGION=eu-north-1
-AWS_ACCESS_KEY_ID=your-access-key
-AWS_SECRET_ACCESS_KEY=your-secret-key
+APP_AWS_REGION=eu-north-1
+APP_AWS_ACCESS_KEY_ID=your-access-key
+APP_AWS_SECRET_ACCESS_KEY=your-secret-key
 CLOUDFRONT_DISTRIBUTION_ID=E2LSEELWH9D3YF
 ```
 
 **For Production (AWS Amplify):**
 ```bash
-AWS_REGION=eu-north-1
+APP_AWS_REGION=eu-north-1
 CLOUDFRONT_DISTRIBUTION_ID=E2LSEELWH9D3YF
-# DO NOT set AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY
+# DO NOT set APP_AWS_ACCESS_KEY_ID or APP_AWS_SECRET_ACCESS_KEY
 # The app uses the Amplify service role IAM credentials automatically
 ```
 
