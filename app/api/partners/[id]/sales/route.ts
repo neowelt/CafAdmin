@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const adminApiBaseUrl = process.env.ADMIN_API_BASE_URL;
-const adminApiKey = process.env.ADMIN_API_KEY;
+const adminApiBaseUrl = process.env.ADMIN_API_BASE_URL!;
+const adminApiKey = process.env.ADMIN_API_KEY!;
 
 if (!adminApiBaseUrl || !adminApiKey) {
   throw new Error("Missing required environment variables: ADMIN_API_BASE_URL or ADMIN_API_KEY");
