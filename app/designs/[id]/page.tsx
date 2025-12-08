@@ -200,8 +200,12 @@ export default function EditDesignPage() {
       const templateDir = design.templateName.toLowerCase();
       const key = `${templateDir}/${templateDir}.jpg`;
 
+      console.log("Uploading preview:", { bucket: S3_PREVIEWS_BUCKET, key, fileType: file.type });
+
       // Upload directly to S3
       const uploadSuccess = await uploadToS3(file, S3_PREVIEWS_BUCKET, key, file.type);
+
+      console.log("Upload success:", uploadSuccess);
 
       if (uploadSuccess) {
         const newPreviewUrl = `${CLOUDFRONT_BASE_URL}/${key}`;
@@ -213,12 +217,16 @@ export default function EditDesignPage() {
 
         toast.success("Preview uploaded successfully. Changes may take up to a minute to appear.");
         await autoSave(updatedDesign);
+      } else {
+        toast.error("Upload failed - please check console for details");
       }
     } catch (error) {
       console.error("Error uploading preview:", error);
       toast.error("Failed to upload preview image");
     } finally {
       setPreviewUploading(false);
+      // Reset the file input
+      e.target.value = "";
     }
   };
 
