@@ -50,25 +50,72 @@ DATABASE_NAME=cafapp
 ```
 
 ### AWS Configuration
+
+**For Local Development:**
 ```bash
 AWS_REGION=eu-north-1
 AWS_ACCESS_KEY_ID=your-access-key
 AWS_SECRET_ACCESS_KEY=your-secret-key
-```
-
-### S3 Buckets
-```bash
-S3_DESIGNS_BUCKET=coverartbucket
-S3_PROCESSING_BUCKET=cafprocessing
-S3_PREVIEWS_BUCKET=cafpreviews
-S3_ORDERS_BUCKET=caforders
-S3_OUTPUT_DIRECTORY=output
-```
-
-### CloudFront
-```bash
 CLOUDFRONT_DISTRIBUTION_ID=E2LSEELWH9D3YF
 ```
+
+**For Production (AWS Amplify):**
+```bash
+AWS_REGION=eu-north-1
+CLOUDFRONT_DISTRIBUTION_ID=E2LSEELWH9D3YF
+# DO NOT set AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY
+# The app uses the Amplify service role IAM credentials automatically
+```
+
+### AWS IAM Role Setup (Production)
+
+When deployed to AWS Amplify, the app uses IAM roles instead of access keys for better security.
+
+**Required IAM Policy for Amplify Service Role:**
+
+Create a policy named `CafAdminAmplifyPolicy` and attach it to your Amplify service role:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "S3Permissions",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::coverartbucket/*",
+        "arn:aws:s3:::coverartbucket",
+        "arn:aws:s3:::cafpreviews/*",
+        "arn:aws:s3:::cafpreviews"
+      ]
+    },
+    {
+      "Sid": "CloudFrontPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:CreateInvalidation",
+        "cloudfront:GetInvalidation"
+      ],
+      "Resource": "arn:aws:cloudfront::*:distribution/E2LSEELWH9D3YF"
+    }
+  ]
+}
+```
+
+**Setup Steps:**
+
+1. Go to **AWS IAM Console** → **Roles**
+2. Find or create your Amplify service role (usually named `amplifyconsole-backend-role` or similar)
+3. Click **Add permissions** → **Create inline policy**
+4. Paste the JSON policy above
+5. Name it `CafAdminAmplifyPolicy` and save
+6. In **AWS Amplify Console**, ensure this role is selected as your service role
 
 ### API Endpoints
 ```bash
@@ -229,6 +276,28 @@ aws s3 ls s3://coverartbucket
 ```
 
 ## Recent Changes
+
+### 2025-12-08: IAM Role-Based Authentication for AWS Services
+
+**Enhancement**: Switched from hardcoded AWS access keys to IAM role-based authentication for production deployments.
+
+**Changes**:
+- Updated S3Client and CloudFrontClient initialization to use conditional credentials
+- Uses IAM role when running on AWS Amplify (production)
+- Falls back to access keys for local development
+- Updated documentation with IAM policy requirements and setup instructions
+
+**Security Benefits**:
+- No long-lived credentials stored in environment variables
+- Automatic credential rotation by AWS
+- Least privilege access control via IAM policies
+- Reduced risk of credential leakage
+- CloudTrail audit logging of all AWS API calls
+
+**Configuration**:
+- Production: Remove `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` from Amplify environment variables
+- Production: Attach IAM policy to Amplify service role (see README for policy JSON)
+- Local Dev: Continue using access keys in `.env.local`
 
 ### 2025-12-08: Fixed Image Corruption - Direct S3 Uploads
 

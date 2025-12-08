@@ -6,12 +6,16 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 // Initialize S3 client
+// Uses IAM role when running on AWS (no credentials provided)
+// Falls back to access keys for local development
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || "eu-north-1",
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
-  },
+  credentials: process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
+    ? {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      }
+    : undefined, // Use default credential chain (IAM role on AWS)
 });
 
 export async function POST(request: NextRequest) {
