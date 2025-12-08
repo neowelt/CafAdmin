@@ -226,6 +226,7 @@ npm start
 
 ### File Management
 - `POST /api/files/upload` - Upload file directly to S3 (uses AWS SDK v3)
+- `POST /api/files/download-url` - Generate presigned download URL for S3 files (uses AWS SDK v3)
 - `POST /api/files/cache/invalidate` - Invalidate CloudFront cache (uses AWS SDK v3)
 - `POST /api/upload` - Legacy upload endpoint (deprecated)
 

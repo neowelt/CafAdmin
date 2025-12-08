@@ -37,6 +37,7 @@ import {
   X,
   CloudUpload,
   Loader2,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
 import { Design, DesignStyle, DesignFont } from "@/lib/types";
@@ -494,6 +495,42 @@ export default function EditDesignPage() {
       });
     } catch (error) {
       console.error("CloudFront invalidation error:", error);
+    }
+  };
+
+  // Helper function to download PSD file
+  const handleDownloadPSD = async (fileName: string) => {
+    try {
+      toast.info("Generating download link...");
+
+      // Request a presigned download URL from the backend
+      const response = await fetch("/api/files/download-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bucket: S3_DESIGNS_BUCKET,
+          key: fileName,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate download URL");
+      }
+
+      const data = await response.json();
+
+      // Trigger download using the presigned URL
+      const link = document.createElement("a");
+      link.href = data.url;
+      link.download = fileName.split("/").pop() || "design.psd";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success("Download started");
+    } catch (error) {
+      console.error("Error downloading PSD:", error);
+      toast.error("Failed to download PSD file");
     }
   };
 
@@ -997,6 +1034,18 @@ export default function EditDesignPage() {
                                 </span>
                               </Button>
                             </Label>
+
+                            {style.fileName && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownloadPSD(style.fileName)}
+                              >
+                                <Download className="mr-2 h-4 w-4" />
+                                Download PSD
+                              </Button>
+                            )}
                           </div>
                         </div>
 
