@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Order } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ import { toast } from "sonner";
 import { Search, CheckCircle } from "lucide-react";
 
 export default function OrdersPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -205,7 +207,7 @@ export default function OrdersPage() {
                     <TableRow
                       key={String(order._id)}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => window.location.href = `/orders/${order._id}`}
+                      onClick={() => router.push(`/orders/${order._id}`)}
                     >
                       <TableCell className="text-sm">
                         {formatDate(order.createdAt)}
