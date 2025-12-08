@@ -16,13 +16,18 @@ import { Design, DesignStyle, DesignFont } from "@/lib/types";
 export default function AddDesignPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(1);
+  const [designId, setDesignId] = useState<string | null>(null);
+  const [templateNameValid, setTemplateNameValid] = useState(false);
+  const [templateNameError, setTemplateNameError] = useState("");
+
   const [formData, setFormData] = useState({
     templateName: "",
     description: "",
     overview: "",
     preview: "",
-    productTier: "free",
-    appleProductId: "",
+    productTier: "basic",
+    appleProductId: "Neowelt.Interactive.CoverArtFactory.standardcover",
     published: false,
     allowCustomImage: false,
     customImageWidth: 1080,
@@ -49,6 +54,31 @@ export default function AddDesignPage() {
 
   const [fonts, setFonts] = useState<DesignFont[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<Record<string, boolean>>({});
+
+  const validateTemplateName = (name: string) => {
+    if (!name) {
+      setTemplateNameError("Template name is required");
+      setTemplateNameValid(false);
+      return false;
+    }
+
+    // Allow only alphanumeric characters and underscores
+    if (!/^[a-zA-Z0-9_]+$/.test(name)) {
+      setTemplateNameError("Template name can only contain letters, numbers, and underscores");
+      setTemplateNameValid(false);
+      return false;
+    }
+
+    setTemplateNameError("");
+    setTemplateNameValid(true);
+    return true;
+  };
+
+  const handleTemplateNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFormData((prev) => ({ ...prev, templateName: value }));
+    validateTemplateName(value);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -181,11 +211,59 @@ export default function AddDesignPage() {
     }
   };
 
+  const createTemplate = async () => {
+    if (!templateNameValid || !formData.templateName) {
+      toast.error("Please enter a valid template name");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Step 1: Create the design with only template name
+      const initialDesign = {
+        templateName: formData.templateName,
+        productTier: formData.productTier,
+        appleProductId: formData.appleProductId,
+        description: "",
+        overview: "",
+        preview: "",
+        published: false,
+        allowCustomImage: false,
+        customImageWidth: 1080,
+        customImageHeight: 1080,
+        customImageBgTransparency: false,
+        fonts: [],
+        styles: [],
+        macroIds: [],
+      };
+
+      const response = await fetch("/api/designs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(initialDesign),
+      });
+
+      if (!response.ok) throw new Error("Failed to create template");
+
+      const data = await response.json();
+      setDesignId(data._id);
+
+      toast.success("Template created successfully");
+      setStep(2);
+    } catch (error) {
+      console.error("Error creating template:", error);
+      toast.error("Failed to create template");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.templateName) {
-      toast.error("Template name is required");
+    if (!designId) {
+      toast.error("Design ID not found");
       return;
     }
 
@@ -197,7 +275,7 @@ export default function AddDesignPage() {
     try {
       setLoading(true);
 
-      const design: Omit<Design, "_id"> = {
+      const design = {
         ...formData,
         customImageWidth: Number(formData.customImageWidth),
         customImageHeight: Number(formData.customImageHeight),
@@ -206,19 +284,19 @@ export default function AddDesignPage() {
         macroIds: [],
       };
 
-      const response = await fetch("/api/designs", {
-        method: "POST",
+      const response = await fetch(`/api/designs/${designId}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(design),
       });
 
-      if (!response.ok) throw new Error("Failed to create design");
+      if (!response.ok) throw new Error("Failed to update design");
 
-      toast.success("Design created successfully");
+      toast.success("Design saved successfully");
       router.push("/designs");
     } catch (error) {
-      console.error("Error creating design:", error);
-      toast.error("Failed to create design");
+      console.error("Error updating design:", error);
+      toast.error("Failed to save design");
     } finally {
       setLoading(false);
     }
@@ -234,28 +312,75 @@ export default function AddDesignPage() {
           </Link>
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">Add New Design</h1>
-        <p className="text-muted-foreground">Create a new cover art template</p>
+        <p className="text-muted-foreground">
+          {step === 1 ? "Step 1: Create Template" : "Step 2: Complete Template Details"}
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
+      {step === 1 ? (
+        /* Step 1: Create Template */
         <Card>
           <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
-            <CardDescription>Template details and metadata</CardDescription>
+            <CardTitle>Create Template</CardTitle>
+            <CardDescription>Enter a unique template name to get started</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="templateName">Template Name *</Label>
-                <Input
-                  id="templateName"
-                  name="templateName"
-                  value={formData.templateName}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="templateName">Template Name *</Label>
+              <Input
+                id="templateName"
+                name="templateName"
+                value={formData.templateName}
+                onChange={handleTemplateNameChange}
+                placeholder="e.g., Modern_Vibes, Classic_Album"
+                required
+              />
+              <p className="text-sm text-muted-foreground">
+                No spaces or special characters. Use only letters, numbers, and underscores.
+              </p>
+              {templateNameError && (
+                <p className="text-sm text-destructive">{templateNameError}</p>
+              )}
+              {templateNameValid && !templateNameError && (
+                <p className="text-sm text-green-600">Template name is valid</p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-4">
+              <Button type="button" variant="outline" asChild>
+                <Link href="/designs">Cancel</Link>
+              </Button>
+              <Button
+                type="button"
+                onClick={createTemplate}
+                disabled={!templateNameValid || loading}
+              >
+                {loading ? "Creating..." : "Create Template"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        /* Step 2: Complete Template Details */
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Basic Information</CardTitle>
+              <CardDescription>Template details and metadata</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="templateName">Template Name *</Label>
+                  <Input
+                    id="templateName"
+                    name="templateName"
+                    value={formData.templateName}
+                    disabled
+                    className="bg-muted"
+                  />
+                </div>
               <div className="space-y-2">
                 <Label htmlFor="productTier">Product Tier</Label>
                 <Input
@@ -491,10 +616,11 @@ export default function AddDesignPage() {
             <Link href="/designs">Cancel</Link>
           </Button>
           <Button type="submit" disabled={loading}>
-            {loading ? "Creating..." : "Create Design"}
+            {loading ? "Saving..." : "Save Design"}
           </Button>
         </div>
       </form>
+      )}
     </div>
   );
 }
