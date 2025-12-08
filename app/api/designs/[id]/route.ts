@@ -61,16 +61,12 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const result = await ExternalApiClient.deleteDesign(id);
+    await ExternalApiClient.deleteDesign(id);
 
-    if (!result) {
-      return NextResponse.json(
-        { error: 'Design not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ message: 'Design deleted successfully' });
+    return NextResponse.json({
+      success: true,
+      message: 'Design deleted successfully'
+    });
   } catch (error) {
     console.error('Error deleting design:', error);
     return NextResponse.json(
