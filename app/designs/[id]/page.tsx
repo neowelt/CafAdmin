@@ -470,6 +470,7 @@ export default function EditDesignPage() {
       formData.append("file", file);
       formData.append("bucket", bucket);
       formData.append("key", key);
+      formData.append("content_type", contentType);
 
       const response = await fetch("/api/files/upload", {
         method: "POST",

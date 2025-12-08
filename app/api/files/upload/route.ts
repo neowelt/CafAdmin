@@ -12,8 +12,9 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const bucket = formData.get("bucket");
     const key = formData.get("key");
+    const contentType = formData.get("content_type");
 
-    console.log("File upload request:", { bucket, key, hasApiUrl: !!ADMIN_API_BASE_URL, hasApiKey: !!ADMIN_API_KEY });
+    console.log("File upload request:", { bucket, key, contentType, hasApiUrl: !!ADMIN_API_BASE_URL, hasApiKey: !!ADMIN_API_KEY });
 
     if (!ADMIN_API_BASE_URL || !ADMIN_API_KEY) {
       console.error("Missing environment variables:", { hasApiUrl: !!ADMIN_API_BASE_URL, hasApiKey: !!ADMIN_API_KEY });
