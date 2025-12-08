@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Force dynamic rendering - prevents static optimization
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // GET /api/orders/:id - Get a single order
 export async function GET(
   request: NextRequest,
@@ -12,17 +16,28 @@ export async function GET(
     const adminApiKey = process.env.ADMIN_API_KEY;
 
     if (!adminApiBaseUrl || !adminApiKey) {
+      console.error('Environment variables missing:', {
+        hasBaseUrl: !!adminApiBaseUrl,
+        hasApiKey: !!adminApiKey,
+        env: process.env.NODE_ENV,
+      });
       return NextResponse.json(
         { error: 'Admin API configuration missing' },
         { status: 500 }
       );
     }
 
-    const response = await fetch(`${adminApiBaseUrl}/admin/orders/${id}`, {
+    const url = `${adminApiBaseUrl}/admin/orders/${id}`;
+    console.log('Fetching order from:', url);
+
+    const response = await fetch(url, {
       headers: {
         'x-api-key': adminApiKey,
       },
+      cache: 'no-store',
     });
+
+    console.log('Admin API response status:', response.status);
 
     if (response.status === 404) {
       return NextResponse.json(
@@ -32,7 +47,13 @@ export async function GET(
     }
 
     if (!response.ok) {
-      throw new Error(`Admin API returned ${response.status}`);
+      const errorText = await response.text().catch(() => 'Unable to read error');
+      console.error('Admin API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+      });
+      throw new Error(`Admin API returned ${response.status}: ${errorText}`);
     }
 
     const order = await response.json();
@@ -40,7 +61,10 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching order:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch order' },
+      {
+        error: 'Failed to fetch order',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
