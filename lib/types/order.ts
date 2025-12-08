@@ -26,6 +26,19 @@ export interface Order {
   appleProductId: string;
   preview?: string | null;
   design?: string | null;
+  affiliate_id?: string | null;
+  stripeSessionId?: string | null;
+  paymentProvider?: string | null;
+  currency?: string | null;
+}
+
+// Monthly sales summary
+export interface MonthlySales {
+  year: number;
+  month: number;
+  monthName: string;
+  totalSales: number;
+  orderCount: number;
 }
 
 // Filter types for orders

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Partner } from "@/lib/types";
+import { Partner, MonthlySales } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,8 +13,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Pencil } from "lucide-react";
+import { Plus, Search, Pencil, DollarSign, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PartnersPage() {
@@ -22,6 +30,14 @@ export default function PartnersPage() {
   const [filteredPartners, setFilteredPartners] = useState<Partner[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [salesDialogOpen, setSalesDialogOpen] = useState(false);
+  const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
+  const [salesData, setSalesData] = useState<{
+    monthlySales: MonthlySales[];
+    totalSales: number;
+    totalOrders: number;
+  } | null>(null);
+  const [loadingSales, setLoadingSales] = useState(false);
 
   useEffect(() => {
     fetchPartners();
@@ -61,6 +77,26 @@ export default function PartnersPage() {
     filtered.sort((a, b) => a.name.localeCompare(b.name));
 
     setFilteredPartners(filtered);
+  };
+
+  const handleViewSales = async (partner: Partner) => {
+    setSelectedPartner(partner);
+    setSalesDialogOpen(true);
+    setLoadingSales(true);
+    setSalesData(null);
+
+    try {
+      const response = await fetch(`/api/partners/${partner.partnerId}/sales`);
+      if (!response.ok) throw new Error("Failed to fetch sales data");
+
+      const data = await response.json();
+      setSalesData(data);
+    } catch (error) {
+      console.error("Error fetching sales:", error);
+      toast.error("Failed to load sales data");
+    } finally {
+      setLoadingSales(false);
+    }
   };
 
   const formatDate = (dateString: string): string => {
@@ -175,18 +211,93 @@ export default function PartnersPage() {
                   </TableCell>
                   <TableCell>{formatDate(partner.createdAt)}</TableCell>
                   <TableCell className="text-right">
-                    <Button asChild size="sm">
-                      <Link href={`/partners/${partner.partnerId}`}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit
-                      </Link>
-                    </Button>
+                    <div className="flex gap-2 justify-end">
+                      <Button asChild size="sm">
+                        <Link href={`/partners/${partner.partnerId}`}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit
+                        </Link>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewSales(partner);
+                        }}
+                      >
+                        <DollarSign className="mr-2 h-4 w-4" />
+                        Sales
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {/* Sales Summary Dialog */}
+      {selectedPartner && (
+        <Dialog open={salesDialogOpen} onOpenChange={setSalesDialogOpen}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Sales Report - {selectedPartner.name}</DialogTitle>
+              <DialogDescription>
+                Monthly sales summary for live Stripe orders
+              </DialogDescription>
+            </DialogHeader>
+
+            {loadingSales ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : salesData && salesData.monthlySales.length > 0 ? (
+              <div className="space-y-4">
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Month</TableHead>
+                        <TableHead className="text-right">Orders</TableHead>
+                        <TableHead className="text-right">Total Sales</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {salesData.monthlySales.map((month, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium">{month.monthName}</TableCell>
+                          <TableCell className="text-right">{month.orderCount}</TableCell>
+                          <TableCell className="text-right">
+                            ${month.totalSales.toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="font-bold bg-muted/50">
+                        <TableCell>Total</TableCell>
+                        <TableCell className="text-right">{salesData.totalOrders}</TableCell>
+                        <TableCell className="text-right">
+                          ${salesData.totalSales.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No sales data found for this partner.
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSalesDialogOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

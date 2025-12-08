@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,14 +17,16 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Trash2, X, Plus, Loader2 } from "lucide-react";
+import { ArrowLeft, Trash2, X, Plus, Loader2, DollarSign } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Link from "next/link";
-import { Partner, PartnerColors } from "@/lib/types";
+import { Partner, PartnerColors, MonthlySales } from "@/lib/types";
 import { OklchColorPicker } from "@/components/ui/oklch-color-picker";
 
 export default function EditPartnerPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const partnerId = params.id as string;
 
   const [loading, setLoading] = useState(true);
@@ -32,6 +34,13 @@ export default function EditPartnerPage() {
   const [partner, setPartner] = useState<Partner | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [salesDialogOpen, setSalesDialogOpen] = useState(false);
+  const [salesData, setSalesData] = useState<{
+    monthlySales: MonthlySales[];
+    totalSales: number;
+    totalOrders: number;
+  } | null>(null);
+  const [loadingSales, setLoadingSales] = useState(false);
 
   // Domain input
   const [newDomain, setNewDomain] = useState("");
@@ -41,6 +50,13 @@ export default function EditPartnerPage() {
       fetchPartner();
     }
   }, [partnerId]);
+
+  useEffect(() => {
+    // Check if we should auto-open the sales dialog
+    if (partner && searchParams.get('showSales') === 'true') {
+      handleViewSales();
+    }
+  }, [partner, searchParams]);
 
   const fetchPartner = async () => {
     try {
@@ -61,14 +77,17 @@ export default function EditPartnerPage() {
     const { name, value } = e.target;
 
     if (name === "revenueShare") {
-      // Convert percentage input to float (0-1)
+      // Convert percentage input (0-100) to float (0-1)
       const percentage = parseFloat(value);
-      if (!isNaN(percentage)) {
+      if (!isNaN(percentage) && percentage >= 0 && percentage <= 100) {
         setPartner((prev) => {
           if (!prev) return prev;
           return { ...prev, revenueShare: percentage / 100 };
         });
       }
+    } else if (name === "partnerId") {
+      // Don't allow partnerId changes
+      return;
     } else {
       setPartner((prev) => {
         if (!prev) return prev;
@@ -173,6 +192,27 @@ export default function EditPartnerPage() {
     }
   };
 
+  const handleViewSales = async () => {
+    if (!partner) return;
+
+    setSalesDialogOpen(true);
+    setLoadingSales(true);
+    setSalesData(null);
+
+    try {
+      const response = await fetch(`/api/partners/${partnerId}/sales`);
+      if (!response.ok) throw new Error("Failed to fetch sales data");
+
+      const data = await response.json();
+      setSalesData(data);
+    } catch (error) {
+      console.error("Error fetching sales:", error);
+      toast.error("Failed to load sales data");
+    } finally {
+      setLoadingSales(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -210,6 +250,10 @@ export default function EditPartnerPage() {
             <h1 className="text-3xl font-bold tracking-tight">Edit Partner: {partner.name}</h1>
             <p className="text-muted-foreground font-mono text-sm">{partner.partnerId}</p>
           </div>
+          <Button variant="outline" onClick={handleViewSales}>
+            <DollarSign className="mr-2 h-4 w-4" />
+            View Sales
+          </Button>
         </div>
       </div>
 
@@ -229,8 +273,12 @@ export default function EditPartnerPage() {
                   value={partner.partnerId}
                   onChange={handleInputChange}
                   required
-                  className="font-mono"
+                  disabled
+                  className="font-mono bg-muted"
                 />
+                <p className="text-sm text-muted-foreground">
+                  Partner ID cannot be changed after creation
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="name">Name *</Label>
@@ -252,13 +300,13 @@ export default function EditPartnerPage() {
                 type="number"
                 min="0"
                 max="100"
-                step="0.1"
-                value={(partner.revenueShare * 100).toFixed(1)}
+                step="1"
+                value={Math.round(partner.revenueShare * 100)}
                 onChange={handleInputChange}
                 required
               />
               <p className="text-sm text-muted-foreground">
-                Current: {(partner.revenueShare * 100).toFixed(1)}% (stored as {partner.revenueShare.toFixed(3)})
+                Enter as percentage (e.g., 20 for 20%). Stored as {partner.revenueShare.toFixed(3)}
               </p>
             </div>
 
@@ -427,6 +475,66 @@ export default function EditPartnerPage() {
               ) : (
                 "Delete"
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sales Summary Dialog */}
+      <Dialog open={salesDialogOpen} onOpenChange={setSalesDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Sales Report - {partner.name}</DialogTitle>
+            <DialogDescription>
+              Monthly sales summary for live Stripe orders
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingSales ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : salesData && salesData.monthlySales.length > 0 ? (
+            <div className="space-y-4">
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Month</TableHead>
+                      <TableHead className="text-right">Orders</TableHead>
+                      <TableHead className="text-right">Total Sales</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {salesData.monthlySales.map((month, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{month.monthName}</TableCell>
+                        <TableCell className="text-right">{month.orderCount}</TableCell>
+                        <TableCell className="text-right">
+                          ${month.totalSales.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="font-bold bg-muted/50">
+                      <TableCell>Total</TableCell>
+                      <TableCell className="text-right">{salesData.totalOrders}</TableCell>
+                      <TableCell className="text-right">
+                        ${salesData.totalSales.toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No sales data found for this partner.
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSalesDialogOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
