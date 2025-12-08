@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const adminApiBaseUrl = process.env.ADMIN_API_BASE_URL!;
-const adminApiKey = process.env.ADMIN_API_KEY!;
-
-if (!adminApiBaseUrl || !adminApiKey) {
-  throw new Error("Missing required environment variables: ADMIN_API_BASE_URL or ADMIN_API_KEY");
-}
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
+
+    const adminApiBaseUrl = process.env.ADMIN_API_BASE_URL;
+    const adminApiKey = process.env.ADMIN_API_KEY;
+
+    if (!adminApiBaseUrl || !adminApiKey) {
+      return NextResponse.json(
+        { error: "Server configuration error: Missing API credentials" },
+        { status: 500 }
+      );
+    }
 
     // Fetch all orders for this partner from the backend
     const response = await fetch(`${adminApiBaseUrl}/admin/orders?skip=0&limit=10000`, {
