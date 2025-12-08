@@ -711,30 +711,30 @@ export default function EditDesignPage() {
 
             {/* Switches */}
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="published">Published</Label>
+              <div className="flex items-center gap-2">
                 <Switch
                   id="published"
                   checked={design.published}
                   onCheckedChange={(checked) => handleSwitchChange("published", checked)}
                 />
+                <Label htmlFor="published" className="cursor-pointer">Published</Label>
               </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="allowCustomImage">Allow Custom Image</Label>
+              <div className="flex items-center gap-2">
                 <Switch
                   id="allowCustomImage"
                   checked={design.allowCustomImage}
                   onCheckedChange={(checked) => handleSwitchChange("allowCustomImage", checked)}
                 />
+                <Label htmlFor="allowCustomImage" className="cursor-pointer">Allow Custom Image</Label>
               </div>
               {design.allowCustomImage && (
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="customImageBgTransparency">Custom Image BG Transparency</Label>
+                <div className="flex items-center gap-2">
                   <Switch
                     id="customImageBgTransparency"
                     checked={design.customImageBgTransparency}
                     onCheckedChange={(checked) => handleSwitchChange("customImageBgTransparency", checked)}
                   />
+                  <Label htmlFor="customImageBgTransparency" className="cursor-pointer">Custom Image BG Transparency</Label>
                 </div>
               )}
             </div>
