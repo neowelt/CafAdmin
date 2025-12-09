@@ -7,17 +7,13 @@ export const runtime = 'nodejs';
 
 const CLOUDFRONT_DISTRIBUTION_ID = process.env.CLOUDFRONT_DISTRIBUTION_ID || "";
 
-// Initialize CloudFront client
-// Uses IAM role when running on AWS (no credentials provided)
-// Falls back to access keys for local development
+// Initialize CloudFront client with access keys
 const cloudFrontClient = new CloudFrontClient({
   region: process.env.APP_AWS_REGION || "eu-north-1",
-  credentials: process.env.APP_AWS_ACCESS_KEY_ID && process.env.APP_AWS_SECRET_ACCESS_KEY
-    ? {
-        accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY,
-      }
-    : undefined, // Use default credential chain (IAM role on AWS)
+  credentials: {
+    accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID as string,
+    secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY as string,
+  },
 });
 
 export async function POST(request: NextRequest) {

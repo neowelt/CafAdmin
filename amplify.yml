@@ -10,6 +10,8 @@ frontend:
         - echo "ADMIN_API_KEY=$ADMIN_API_KEY" >> .env.production
         - echo "NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME" >> .env.production
         - echo "APP_AWS_REGION=$APP_AWS_REGION" >> .env.production
+        - echo "APP_AWS_ACCESS_KEY_ID=$APP_AWS_ACCESS_KEY_ID" >> .env.production
+        - echo "APP_AWS_SECRET_ACCESS_KEY=$APP_AWS_SECRET_ACCESS_KEY" >> .env.production
         - echo "CLOUDFRONT_DISTRIBUTION_ID=$CLOUDFRONT_DISTRIBUTION_ID" >> .env.production
         - npm run build
   artifacts:
