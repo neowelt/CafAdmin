@@ -284,7 +284,16 @@ export default function EditDesignPage() {
     if (!design) return;
 
     const styleNumber = design.styles.length + 1;
-    const newStyle: DesignStyle = {
+
+    // If there are existing styles, copy values from the previous style (except preview and fileName)
+    const previousStyle = design.styles.length > 0 ? design.styles[design.styles.length - 1] : null;
+
+    const newStyle: DesignStyle = previousStyle ? {
+      ...previousStyle,
+      styleName: `S${styleNumber}`,
+      preview: "",
+      fileName: "",
+    } : {
       styleName: `S${styleNumber}`,
       artistTag: "ARTIST",
       titleTag: "TITLE",
