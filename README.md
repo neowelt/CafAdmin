@@ -51,30 +51,32 @@ DATABASE_NAME=cafapp
 
 ### AWS Configuration
 
-**Important**: AWS Amplify does not allow environment variables starting with `AWS_`. Use the `APP_AWS_*` prefix instead.
-
 **Required for both Local and Production:**
 ```bash
 APP_AWS_REGION=eu-north-1
-APP_AWS_ACCESS_KEY_ID=your-access-key
-APP_AWS_SECRET_ACCESS_KEY=your-secret-key
 CLOUDFRONT_DISTRIBUTION_ID=E2LSEELWH9D3YF
 ```
 
-**IAM User Permissions:**
+**Authentication:**
 
-The IAM user whose credentials you use needs the following permissions:
+This application uses IAM roles for AWS service authentication instead of access keys:
+
+- **Local Development**: Configure AWS credentials via AWS CLI (`aws configure`) or use IAM role if running on EC2
+- **Production (Amplify)**: Amplify uses the IAM role attached to the Amplify service
+
+**Required IAM Permissions:**
+
+The IAM role needs the following permissions:
 
 - S3: `PutObject`, `GetObject`, `DeleteObject`, `ListBucket` on buckets: `coverartbucket`, `cafpreviews`
 - CloudFront: `CreateInvalidation`, `GetInvalidation` on distribution `E2LSEELWH9D3YF`
+- Secrets Manager: `GetSecretValue` on secret `production/caf/shared`
 
 **Amplify Console Setup:**
 
 1. Go to AWS Amplify Console → Your App → App Settings → Environment variables
 2. Add the following variables:
    - `APP_AWS_REGION=eu-north-1`
-   - `APP_AWS_ACCESS_KEY_ID=your-access-key`
-   - `APP_AWS_SECRET_ACCESS_KEY=your-secret-key`
    - `CLOUDFRONT_DISTRIBUTION_ID=E2LSEELWH9D3YF`
 
 ### API Endpoints

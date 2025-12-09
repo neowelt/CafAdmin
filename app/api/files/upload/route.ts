@@ -8,11 +8,8 @@ export const runtime = 'nodejs';
 // Initialize S3 client with access keys
 const s3Client = new S3Client({
   region: process.env.APP_AWS_REGION || "eu-north-1",
-  credentials: {
-    accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID as string,
-    secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY as string,
-  },
 });
+
 
 export async function POST(request: NextRequest) {
   try {

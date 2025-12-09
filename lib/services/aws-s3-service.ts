@@ -13,18 +13,10 @@ import {
 
 const s3Client = new S3Client({
   region: process.env.APP_AWS_REGION || 'eu-north-1',
-  credentials: {
-    accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID as string,
-    secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY as string,
-  },
 });
 
 const cloudFrontClient = new CloudFrontClient({
   region: process.env.APP_AWS_REGION || 'eu-north-1',
-  credentials: {
-    accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID as string,
-    secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY as string,
-  },
 });
 
 export class AwsS3Service {
