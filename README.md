@@ -185,10 +185,9 @@ npm start
 - `POST /api/orders/:id/complete` - Complete order
 
 ### File Management
-- `POST /api/files/upload` - Upload file directly to S3 (uses AWS SDK v3)
-- `POST /api/files/download-url` - Generate presigned download URL for S3 files (uses AWS SDK v3)
-- `POST /api/files/cache/invalidate` - Invalidate CloudFront cache (uses AWS SDK v3)
-- `POST /api/upload` - Legacy upload endpoint (deprecated)
+- `GET /api/upload/presign` - Generate presigned URL for direct S3 uploads (supports large files 500MB+)
+- `POST /api/files/download-url` - Generate presigned download URL for S3 files
+- `POST /api/files/cache/invalidate` - Invalidate CloudFront cache
 
 ## Database Collections
 
@@ -216,7 +215,7 @@ npm start
 - **UI Framework**: shadcn/ui instead of MudBlazor
 - **Database Models**: Maintained exact same MongoDB schema
 - **S3 File Paths**: Same structure as Blazor version
-- **File Uploads**: Direct S3 uploads via AWS SDK v3 (no FastAPI proxy needed)
+- **File Uploads**: Presigned URL uploads directly to S3 (supports large files 500MB+, uses IAM roles)
 
 ## Troubleshooting
 
@@ -240,25 +239,28 @@ aws s3 ls s3://coverartbucket
 
 ## Recent Changes
 
-### 2025-12-08: Fixed Image Corruption - Direct S3 Uploads
+### 2025-12-10: Presigned URL Uploads for Large Files
 
-**Problem**: Images uploaded to S3 appeared corrupted/not displaying in browsers.
+**Problem**: Server-side uploads failed in Amplify and couldn't support large files (500MB+) due to body size limits.
 
-**Root Cause**: The FastAPI backend proxy was losing the `Content-Type` metadata when forwarding FormData, causing images to be uploaded with `application/octet-stream` instead of `image/jpeg`.
-
-**Solution**: Removed the FastAPI proxy entirely and implemented direct S3 uploads from Next.js API routes using AWS SDK v3.
+**Solution**: Implemented presigned URL upload system where files upload directly from browser to S3, bypassing the Next.js server entirely.
 
 **Changes**:
-- Installed `@aws-sdk/client-s3` and `@aws-sdk/client-cloudfront`
-- Updated `/api/files/upload` to upload directly to S3 with proper `ContentType` header
-- Updated `/api/files/cache/invalidate` to invalidate CloudFront cache directly
-- Frontend continues to pass `content_type` in FormData for explicit type specification
+- Created `/api/upload/presign` route to generate presigned URLs using IAM roles
+- Added `uploadToS3WithProgress()` client utility with progress tracking support
+- Updated design form to use presigned URL uploads for PSD files, previews, and fonts
+- Removed old server-side upload routes (`/api/upload` and `/api/files/upload`)
+- Added comprehensive documentation in `UPLOAD_EXAMPLES.md` and `AMPLIFY_CONFIGURATION.md`
 
 **Benefits**:
-- Eliminates proxy overhead and potential data corruption
-- Faster uploads (one less network hop)
-- Proper Content-Type headers preserved
-- No backend deployment required for file upload changes
+- Supports very large files (500MB+) without server memory constraints
+- Bypasses CloudFront and Next.js body size limits
+- Direct browser-to-S3 upload reduces bandwidth costs
+- Real-time upload progress tracking
+- Secure authentication using Amplify IAM roles (no exposed credentials)
+- Better performance and scalability
+
+**Migration**: All existing upload functionality automatically uses presigned URLs. Requires AWS S3 CORS configuration and IAM role permissions (see `AMPLIFY_CONFIGURATION.md`).
 
 ## License
 

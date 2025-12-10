@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
+import { uploadToS3WithProgress } from "@/lib/upload-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -474,20 +475,20 @@ export default function EditDesignPage() {
   };
 
   // Helper function to upload to S3
+  // Upload to S3 using presigned URLs (supports large files 500MB+)
   const uploadToS3 = async (file: File, bucket: string, key: string, contentType: string): Promise<boolean> => {
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("bucket", bucket);
-      formData.append("key", key);
-      formData.append("content_type", contentType);
-
-      const response = await fetch("/api/files/upload", {
-        method: "POST",
-        body: formData,
+      const result = await uploadToS3WithProgress({
+        fileName: key,
+        file: file,
+        bucket: bucket,
+        onProgress: (progress) => {
+          console.log(`Upload progress: ${progress}%`);
+          // Progress tracking could be added to UI if needed
+        },
       });
 
-      return response.ok;
+      return result.success;
     } catch (error) {
       console.error("S3 upload error:", error);
       return false;
