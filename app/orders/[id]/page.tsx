@@ -3,13 +3,15 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Order } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, Loader2, CheckCircle, XCircle, Eye, Download } from "lucide-react";
 
 export default function OrderDetailPage() {
   const router = useRouter();
@@ -18,6 +20,10 @@ export default function OrderDetailPage() {
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [loadingDownload, setLoadingDownload] = useState(false);
 
   useEffect(() => {
     if (orderId) {
@@ -66,6 +72,72 @@ export default function OrderDetailPage() {
     if (lowerStatus === "completed") return "default";
     if (lowerStatus === "pending") return "secondary";
     return "destructive";
+  };
+
+  const handlePreview = async () => {
+    if (!order?.preview) return;
+
+    setLoadingPreview(true);
+    try {
+      const response = await fetch("/api/files/download-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bucket: "caforders",
+          key: order.preview,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate preview URL");
+      }
+
+      const data = await response.json();
+      setPreviewUrl(data.url);
+      setShowPreviewDialog(true);
+    } catch (error) {
+      console.error("Error loading preview:", error);
+      toast.error("Failed to load preview");
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!order?.design) return;
+
+    setLoadingDownload(true);
+    try {
+      const response = await fetch("/api/files/download-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bucket: "caforders",
+          key: order.design,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate download URL");
+      }
+
+      const data = await response.json();
+
+      // Trigger download using a temporary anchor element
+      const link = document.createElement("a");
+      link.href = data.url;
+      link.download = order.design.split("/").pop() || "design";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success("Download started");
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      toast.error("Failed to download file");
+    } finally {
+      setLoadingDownload(false);
+    }
   };
 
   if (loading) {
@@ -281,7 +353,24 @@ export default function OrderDetailPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 {order.preview && (
                   <div>
-                    <p className="text-sm text-muted-foreground mb-2">Preview</p>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm text-muted-foreground">Preview</p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handlePreview}
+                        disabled={loadingPreview}
+                      >
+                        {loadingPreview ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Preview
+                          </>
+                        )}
+                      </Button>
+                    </div>
                     <p className="font-mono text-xs text-muted-foreground break-all">
                       {order.preview}
                     </p>
@@ -289,7 +378,24 @@ export default function OrderDetailPage() {
                 )}
                 {order.design && (
                   <div>
-                    <p className="text-sm text-muted-foreground mb-2">Design</p>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm text-muted-foreground">Design</p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleDownload}
+                        disabled={loadingDownload}
+                      >
+                        {loadingDownload ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </>
+                        )}
+                      </Button>
+                    </div>
                     <p className="font-mono text-xs text-muted-foreground break-all">
                       {order.design}
                     </p>
@@ -300,6 +406,27 @@ export default function OrderDetailPage() {
           </Card>
         )}
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={showPreviewDialog} onOpenChange={setShowPreviewDialog}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Design Preview</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center">
+            {previewUrl && (
+              <Image
+                src={previewUrl}
+                alt="Order design preview"
+                width={800}
+                height={800}
+                className="max-w-full h-auto rounded-lg"
+                unoptimized
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

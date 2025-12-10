@@ -18,14 +18,14 @@ const DEFAULT_BUCKET = process.env.S3_UPLOADS_BUCKET || "coverartbucket";
  * Generate a presigned URL for direct S3 uploads
  *
  * Query Parameters:
- * - fileName: The name of the file to upload (required)
+ * - fileName: The S3 key/path for the file (e.g., "test/test.jpg") (required)
  * - contentType: MIME type of the file (required)
  * - bucket: Optional bucket name (defaults to coverartbucket)
  *
  * Returns:
  * - uploadUrl: Presigned URL for PUT request
  * - fileUrl: Public URL of the file after upload
- * - key: S3 object key
+ * - key: S3 object key (same as fileName)
  * - bucket: Bucket name
  */
 export async function GET(request: NextRequest) {
@@ -50,8 +50,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Generate S3 key with uploads/ prefix
-    const key = `uploads/${fileName}`;
+    // Use fileName directly as the S3 key (caller provides full path)
+    const key = fileName;
 
     console.log("Generating presigned URL:", { bucket, key, contentType });
 
