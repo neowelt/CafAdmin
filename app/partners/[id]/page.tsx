@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,11 +17,13 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Trash2, X, Plus, Loader2, DollarSign } from "lucide-react";
+import { ArrowLeft, Trash2, X, Plus, Loader2, DollarSign, Upload, ImageIcon } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Link from "next/link";
 import { Partner, PartnerColors, MonthlySales } from "@/lib/types";
 import { OklchColorPicker } from "@/components/ui/oklch-color-picker";
+import { uploadToS3WithProgress } from "@/lib/upload-utils";
+import { Progress } from "@/components/ui/progress";
 
 export default function EditPartnerPage() {
   const router = useRouter();
@@ -44,6 +46,11 @@ export default function EditPartnerPage() {
 
   // Domain input
   const [newDomain, setNewDomain] = useState("");
+
+  // Logo upload
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoUploadProgress, setLogoUploadProgress] = useState(0);
 
   useEffect(() => {
     if (partnerId) {
@@ -146,6 +153,73 @@ export default function EditPartnerPage() {
         allowedDomains: prev.allowedDomains.filter((_, i) => i !== index),
       };
     });
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!partner) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Please select a valid image file (PNG, JPEG, WebP, or SVG)");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Logo file must be less than 5MB");
+      return;
+    }
+
+    setLogoUploading(true);
+    setLogoUploadProgress(0);
+
+    try {
+      // Determine file extension
+      const extension = file.type === "image/jpeg" ? "jpg" :
+                        file.type === "image/png" ? "png" :
+                        file.type === "image/webp" ? "webp" : "svg";
+
+      const fileName = `partners/${partner.partnerId}/logo.${extension}`;
+
+      const result = await uploadToS3WithProgress({
+        fileName,
+        file,
+        bucket: "public-caf",
+        onProgress: (progress) => setLogoUploadProgress(progress),
+      });
+
+      if (result.success) {
+        setPartner((prev) => {
+          if (!prev) return prev;
+          return { ...prev, logoUrl: result.fileUrl };
+        });
+        toast.success("Logo uploaded successfully");
+      } else {
+        throw new Error(result.error || "Upload failed");
+      }
+    } catch (error) {
+      console.error("Logo upload error:", error);
+      toast.error("Failed to upload logo");
+    } finally {
+      setLogoUploading(false);
+      setLogoUploadProgress(0);
+      // Reset file input
+      if (logoInputRef.current) {
+        logoInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    if (!partner) return;
+    setPartner((prev) => {
+      if (!prev) return prev;
+      return { ...prev, logoUrl: undefined };
+    });
+    toast.success("Logo removed. Save changes to apply.");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -323,6 +397,89 @@ export default function EditPartnerPage() {
                 onCheckedChange={(checked) => handleSwitchChange("sandbox", checked)}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Partner Logo */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Partner Logo</CardTitle>
+            <CardDescription>
+              Upload a logo for this partner (PNG, JPEG, WebP, or SVG, max 5MB)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <input
+              type="file"
+              ref={logoInputRef}
+              onChange={handleLogoUpload}
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              className="hidden"
+            />
+
+            {partner.logoUrl ? (
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="relative w-32 h-32 border rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+                    <img
+                      src={partner.logoUrl}
+                      alt="Partner logo"
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <p className="text-sm text-muted-foreground break-all font-mono">
+                      {partner.logoUrl}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => logoInputRef.current?.click()}
+                        disabled={logoUploading}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Replace
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleRemoveLogo}
+                        disabled={logoUploading}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div
+                className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                onClick={() => !logoUploading && logoInputRef.current?.click()}
+              >
+                <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Click to upload a logo
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  PNG, JPEG, WebP, or SVG (max 5MB)
+                </p>
+              </div>
+            )}
+
+            {logoUploading && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Uploading... {logoUploadProgress}%</span>
+                </div>
+                <Progress value={logoUploadProgress} className="h-2" />
+              </div>
+            )}
           </CardContent>
         </Card>
 
