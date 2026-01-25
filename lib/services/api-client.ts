@@ -352,4 +352,330 @@ export class ExternalApiClient {
       throw error;
     }
   }
+
+  // ==================== Prompt Template Methods ====================
+
+  /**
+   * Fetch all prompt templates from admin API
+   */
+  static async fetchPromptTemplates() {
+    try {
+      const response = await fetch(`${ADMIN_API_BASE_URL}/admin/prompt-templates`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ADMIN_API_KEY,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch prompt templates: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching prompt templates from admin API:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch a prompt template by ID from admin API
+   */
+  static async fetchPromptTemplateById(promptId: string) {
+    try {
+      const response = await fetch(`${ADMIN_API_BASE_URL}/admin/prompt-templates/${promptId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ADMIN_API_KEY,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch prompt template: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching prompt template from admin API:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new prompt template via admin API
+   */
+  static async createPromptTemplate(templateData: any) {
+    try {
+      const response = await fetch(`${ADMIN_API_BASE_URL}/admin/prompt-templates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ADMIN_API_KEY,
+        },
+        body: JSON.stringify(templateData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create prompt template: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating prompt template:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a prompt template via admin API
+   */
+  static async updatePromptTemplate(promptId: string, templateData: any) {
+    try {
+      const response = await fetch(`${ADMIN_API_BASE_URL}/admin/prompt-templates/${promptId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ADMIN_API_KEY,
+        },
+        body: JSON.stringify(templateData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update prompt template: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating prompt template:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a prompt template via admin API
+   */
+  static async deletePromptTemplate(promptId: string) {
+    try {
+      const response = await fetch(`${ADMIN_API_BASE_URL}/admin/prompt-templates/${promptId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ADMIN_API_KEY,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete prompt template: ${response.statusText}`);
+      }
+
+      return;
+    } catch (error) {
+      console.error('Error deleting prompt template:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Test a prompt with S3 image keys
+   */
+  static async testPrompt(payload: { prompt: string; imageKeys: string[] }) {
+    try {
+      const response = await fetch(`${ADMIN_API_BASE_URL}/admin/prompt-templates/test`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ADMIN_API_KEY,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to test prompt: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error testing prompt:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Save example images for a prompt template
+   */
+  static async savePromptExample(promptId: string, formData: FormData) {
+    try {
+      const response = await fetch(`${ADMIN_API_BASE_URL}/admin/prompt-templates/${promptId}/save-example`, {
+        method: 'PUT',
+        headers: {
+          'x-api-key': ADMIN_API_KEY,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to save prompt example: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error saving prompt example:', error);
+      throw error;
+    }
+  }
+
+  // ==================== Render Asset Methods ====================
+
+  /**
+   * Fetch all render assets from admin API
+   */
+  static async fetchRenderAssets() {
+    try {
+      const response = await fetch(`${ADMIN_API_BASE_URL}/admin/render-assets`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ADMIN_API_KEY,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch render assets: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching render assets from admin API:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch a render asset by key (PSD file path)
+   */
+  static async fetchRenderAssetByKey(key: string) {
+    try {
+      const response = await fetch(`${ADMIN_API_BASE_URL}/admin/render-assets/${encodeURIComponent(key)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ADMIN_API_KEY,
+        },
+      });
+
+      if (response.status === 404) {
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch render asset: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching render asset from admin API:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new render asset via admin API
+   */
+  static async createRenderAsset(assetData: any) {
+    try {
+      const response = await fetch(`${ADMIN_API_BASE_URL}/admin/render-assets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ADMIN_API_KEY,
+        },
+        body: JSON.stringify(assetData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create render asset: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating render asset:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a render asset via admin API (by key)
+   */
+  static async updateRenderAsset(key: string, assetData: any) {
+    try {
+      const response = await fetch(`${ADMIN_API_BASE_URL}/admin/render-assets/${encodeURIComponent(key)}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ADMIN_API_KEY,
+        },
+        body: JSON.stringify(assetData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update render asset: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating render asset:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Upsert a render asset via admin API (create or update by key)
+   */
+  static async upsertRenderAsset(assetData: any) {
+    try {
+      const response = await fetch(`${ADMIN_API_BASE_URL}/admin/render-assets`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ADMIN_API_KEY,
+        },
+        body: JSON.stringify(assetData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to upsert render asset: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error upserting render asset:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a render asset via admin API
+   */
+  static async deleteRenderAsset(key: string) {
+    try {
+      const response = await fetch(`${ADMIN_API_BASE_URL}/admin/render-assets/${encodeURIComponent(key)}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ADMIN_API_KEY,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete render asset: ${response.statusText}`);
+      }
+
+      return;
+    } catch (error) {
+      console.error('Error deleting render asset:', error);
+      throw error;
+    }
+  }
 }
