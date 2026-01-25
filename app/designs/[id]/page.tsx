@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Design, DesignStyle, DesignFont } from "@/lib/types";
+import { PostActionsEditor } from "@/components/designs/post-actions-editor";
 
 const S3_DESIGNS_BUCKET = "coverartbucket";
 const S3_PREVIEWS_BUCKET = "cafpreviews";
@@ -986,6 +987,12 @@ export default function EditDesignPage() {
                               </div>
                             </div>
                           </div>
+
+                          {/* Post Actions Editor */}
+                          <PostActionsEditor
+                            psdKey={style.fileName}
+                            disabled={!style.fileName}
+                          />
 
                           <div className="flex items-center gap-2">
                             <Switch
