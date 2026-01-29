@@ -615,16 +615,6 @@ export default function EditDesignPage() {
                       required
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="productTier">Product Tier *</Label>
-                    <Input
-                      id="productTier"
-                      name="productTier"
-                      value={design.productTier}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
                   <div className="space-y-2 md:col-span-2 lg:col-span-1">
                     <Label htmlFor="appleProductId">Apple Product ID</Label>
                     <Select
@@ -1002,14 +992,6 @@ export default function EditDesignPage() {
                             psdKey={style.fileName}
                             disabled={!style.fileName}
                           />
-
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={style.isDefault}
-                              onCheckedChange={(checked) => handleStyleFieldChange(index, "isDefault", checked)}
-                            />
-                            <Label>Is Default Style</Label>
-                          </div>
 
                           <div className="flex items-center gap-2">
                             <Switch
