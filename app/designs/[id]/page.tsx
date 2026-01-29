@@ -301,8 +301,8 @@ export default function EditDesignPage() {
       titleTag: "TITLE",
       artistCaseMode: "UpperCase",
       titleCaseMode: "UpperCase",
-      artistNameMaxCharacters: 32,
-      titleMaxCharacters: 32,
+      artistNameMaxCharacters: 42,
+      titleMaxCharacters: 42,
       titleLines: 1,
       artistLines: 1,
       isDefault: false,
@@ -734,7 +734,7 @@ export default function EditDesignPage() {
               <div className="flex items-center gap-2">
                 <Switch
                   id="v2Template"
-                  checked={(design.version ?? 1) === 2}
+                  checked={(design.version ?? 2) === 2}
                   onCheckedChange={(checked) => handleSwitchChange("version", checked ? 2 : 1)}
                 />
                 <Label htmlFor="v2Template" className="cursor-pointer">V2 Template</Label>
