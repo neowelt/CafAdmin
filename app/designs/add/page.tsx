@@ -67,6 +67,7 @@ export default function AddDesignPage() {
         fonts: [],
         styles: [],
         macroIds: [],
+        version: 1,
       };
 
       const response = await fetch("/api/designs", {

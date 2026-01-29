@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Palette, FolderOpen, ShoppingCart, Users } from "lucide-react";
+import { Palette, FolderOpen, ShoppingCart, Users, FileText } from "lucide-react";
 
 const navigation = [
   {
@@ -27,6 +27,11 @@ const navigation = [
     name: "Partners",
     href: "/partners",
     icon: Users,
+  },
+  {
+    name: "Prompt Templates",
+    href: "/prompt-templates",
+    icon: FileText,
   },
 ];
 

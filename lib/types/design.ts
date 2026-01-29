@@ -13,6 +13,7 @@ export interface DesignStyle {
   artistNameMaxCharacters: number;
   titleMaxCharacters: number;
   isDefault: boolean;
+  featuring: boolean;
   preview: string;
   fileName: string;
   titleLines: number;
@@ -35,6 +36,7 @@ export interface Design {
   fonts: DesignFont[];
   styles: DesignStyle[];
   macroIds: string[];
+  version: number;
 }
 
 // Form types for creating/updating designs
@@ -53,6 +55,7 @@ export interface CreateDesignInput {
   fonts: DesignFont[];
   styles: DesignStyle[];
   macroIds: string[];
+  version: number;
 }
 
 export interface UpdateDesignInput extends CreateDesignInput {

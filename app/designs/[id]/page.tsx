@@ -109,14 +109,14 @@ export default function EditDesignPage() {
     });
   };
 
-  const handleSwitchChange = (name: string, checked: boolean) => {
+  const handleSwitchChange = (name: string, value: boolean | number) => {
     if (!design) return;
     setDesign((prev) => {
       if (!prev) return prev;
-      return { ...prev, [name]: checked };
+      return { ...prev, [name]: value };
     });
     // Auto-save on switch change
-    autoSave({ ...design, [name]: checked });
+    autoSave({ ...design, [name]: value });
   };
 
   const handleSelectChange = (name: string, value: string) => {
@@ -306,6 +306,7 @@ export default function EditDesignPage() {
       titleLines: 1,
       artistLines: 1,
       isDefault: false,
+      featuring: false,
       preview: "",
       fileName: "",
     };
@@ -732,6 +733,14 @@ export default function EditDesignPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Switch
+                  id="v2Template"
+                  checked={(design.version ?? 1) === 2}
+                  onCheckedChange={(checked) => handleSwitchChange("version", checked ? 2 : 1)}
+                />
+                <Label htmlFor="v2Template" className="cursor-pointer">V2 Template</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
                   id="allowCustomImage"
                   checked={design.allowCustomImage}
                   onCheckedChange={(checked) => handleSwitchChange("allowCustomImage", checked)}
@@ -1000,6 +1009,14 @@ export default function EditDesignPage() {
                               onCheckedChange={(checked) => handleStyleFieldChange(index, "isDefault", checked)}
                             />
                             <Label>Is Default Style</Label>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={style.featuring ?? false}
+                              onCheckedChange={(checked) => handleStyleFieldChange(index, "featuring", checked)}
+                            />
+                            <Label>Enable Featuring</Label>
                           </div>
 
                           {style.fileName && (
