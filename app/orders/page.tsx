@@ -191,6 +191,7 @@ export default function OrdersPage() {
                   <TableHead>Artist</TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Parental</TableHead>
+                  <TableHead>Affiliate</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
@@ -198,7 +199,7 @@ export default function OrdersPage() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                       Loading orders...
                     </TableCell>
                   </TableRow>
@@ -230,6 +231,9 @@ export default function OrdersPage() {
                         ) : (
                           <span className="text-muted-foreground">-</span>
                         )}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {order.affiliate_id ?? "App"}
                       </TableCell>
                       <TableCell className="text-sm">
                         ${order.price.toFixed(2)}
