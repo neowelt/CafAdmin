@@ -1,6 +1,7 @@
 export interface PartnerColors {
   background: string;
   border: string;
+  buttonForeground: string;
   foreground: string;
   primary: string;
 }

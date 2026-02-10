@@ -520,6 +520,13 @@ export default function EditPartnerPage() {
                 value={partner.colors.border}
                 onChange={(value) => handleColorChange("border", value)}
               />
+
+              <OklchColorPicker
+                id="color-buttonForeground"
+                label="Button Foreground Color"
+                value={partner.colors.buttonForeground}
+                onChange={(value) => handleColorChange("buttonForeground", value)}
+              />
             </div>
           </CardContent>
         </Card>

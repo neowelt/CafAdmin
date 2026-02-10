@@ -26,6 +26,7 @@ export default function AddPartnerPage() {
   const [newDomain, setNewDomain] = useState("");
   const [colors, setColors] = useState<PartnerColors>({
     background: "oklch(1.0 0 0)",
+    buttonForeground: "oklch(1.0 0 0)",
     foreground: "oklch(0.15 0 0)",
     primary: "oklch(0.4 0.15 240)",
     border: "oklch(0.85 0 0)",
@@ -220,6 +221,13 @@ export default function AddPartnerPage() {
                 label="Border Color"
                 value={colors.border}
                 onChange={(value) => handleColorChange("border", value)}
+              />
+
+              <OklchColorPicker
+                id="color-buttonForeground"
+                label="Button Foreground Color"
+                value={colors.buttonForeground}
+                onChange={(value) => handleColorChange("buttonForeground", value)}
               />
             </div>
           </CardContent>

@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Order } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Order, Partner } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -23,68 +21,106 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { toast } from "sonner";
 import { Search, CheckCircle } from "lucide-react";
 
 export default function OrdersPage() {
   const router = useRouter();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>("all");
+  const [affiliateFilter, setAffiliateFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const pageSize = 50;
 
+  // Fetch all data once on mount
   useEffect(() => {
-    // Reset to page 1 when filters change
-    if (page !== 1) {
-      setPage(1);
-    } else {
-      fetchOrders();
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [ordersRes, partnersRes] = await Promise.all([
+          fetch("/api/orders"),
+          fetch("/api/partners"),
+        ]);
+
+        if (!ordersRes.ok) throw new Error("Failed to fetch orders");
+        const ordersData = await ordersRes.json();
+        setAllOrders(ordersData.items || []);
+
+        if (partnersRes.ok) {
+          const partnersData = await partnersRes.json();
+          setPartners(partnersData || []);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("Failed to load orders");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Client-side filtering
+  useEffect(() => {
+    let result = [...allOrders];
+
+    // Search filter
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      result = result.filter(
+        (order) =>
+          order.userEmail?.toLowerCase().includes(searchLower) ||
+          order.artist.toLowerCase().includes(searchLower) ||
+          order.title.toLowerCase().includes(searchLower) ||
+          order.templateName.toLowerCase().includes(searchLower)
+      );
     }
-  }, [searchQuery, statusFilter, dateFilter]);
 
-  useEffect(() => {
-    fetchOrders();
-  }, [page]);
+    // Status filter
+    if (statusFilter !== "all") {
+      result = result.filter((order) => order.status === statusFilter);
+    }
 
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: page.toString(),
-        pageSize: pageSize.toString(),
+    // Date filter
+    if (dateFilter !== "all") {
+      const now = new Date();
+      let startDate: Date;
+
+      switch (dateFilter) {
+        case "today":
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case "lastweek":
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case "lastmonth":
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          startDate = new Date(0);
+      }
+
+      result = result.filter((order) => {
+        const orderDate = new Date(order.createdAt);
+        return orderDate >= startDate;
       });
-
-      if (searchQuery) params.append("search", searchQuery);
-      if (statusFilter !== "all") params.append("status", statusFilter);
-      if (dateFilter !== "all") params.append("dateFilter", dateFilter);
-
-      const response = await fetch(`/api/orders?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch orders");
-      const data = await response.json();
-
-      setOrders(data.items || []);
-      setTotal(data.total || 0);
-      setTotalPages(data.totalPages || 1);
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-      toast.error("Failed to load orders");
-    } finally {
-      setLoading(false);
     }
-  };
+
+    // Affiliate filter
+    if (affiliateFilter !== "all") {
+      if (affiliateFilter === "app") {
+        result = result.filter((order) => order.affiliate_id == null);
+      } else {
+        result = result.filter((order) => order.affiliate_id === affiliateFilter);
+      }
+    }
+
+    setFilteredOrders(result);
+  }, [allOrders, searchQuery, statusFilter, dateFilter, affiliateFilter]);
 
   const formatDate = (dateString: Date | string): string => {
     try {
@@ -161,144 +197,99 @@ export default function OrdersPage() {
           </SelectContent>
         </Select>
 
+        <Select value={affiliateFilter} onValueChange={setAffiliateFilter}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Affiliate" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Affiliates</SelectItem>
+            <SelectItem value="app">App</SelectItem>
+            {partners.map((p) => (
+              <SelectItem key={p.partnerId} value={p.partnerId}>
+                {p.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <div className="text-sm text-muted-foreground">
-          {total} order{total !== 1 ? "s" : ""} found
-          {totalPages > 1 && ` (page ${page} of ${totalPages})`}
+          {filteredOrders.length} order{filteredOrders.length !== 1 ? "s" : ""} found
         </div>
       </div>
 
       {/* Orders Table */}
-      {orders.length === 0 && !loading ? (
+      {filteredOrders.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center h-64">
             <p className="text-muted-foreground mb-4">
-              {searchQuery || statusFilter !== "all" || dateFilter !== "all"
+              {searchQuery || statusFilter !== "all" || dateFilter !== "all" || affiliateFilter !== "all"
                 ? "No orders match your search criteria."
                 : "No orders found."}
             </p>
           </CardContent>
         </Card>
       ) : (
-        <>
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Created Date</TableHead>
-                  <TableHead>User Email</TableHead>
-                  <TableHead>Template Name</TableHead>
-                  <TableHead>Style Name</TableHead>
-                  <TableHead>Artist</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Parental</TableHead>
-                  <TableHead>Affiliate</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
-                      Loading orders...
+        <div className="border rounded-lg text-xs">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Created Date</TableHead>
+                <TableHead className="text-xs">User Email</TableHead>
+                <TableHead className="text-xs">Template Name</TableHead>
+                <TableHead className="text-xs">Style Name</TableHead>
+                <TableHead className="text-xs">Artist</TableHead>
+                <TableHead className="text-xs">Title</TableHead>
+                <TableHead className="text-xs">Parental</TableHead>
+                <TableHead className="text-xs">Affiliate</TableHead>
+                <TableHead className="text-xs">Price</TableHead>
+                <TableHead className="text-xs">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredOrders.map((order) => {
+                const orderId = String(order._id);
+                return (
+                  <TableRow
+                    key={orderId}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => {
+                      router.push(`/orders/${orderId}`);
+                    }}
+                  >
+                    <TableCell>
+                      {formatDate(order.createdAt)}
+                    </TableCell>
+                    <TableCell>
+                      {order.userEmail || "N/A"}
+                    </TableCell>
+                    <TableCell className="font-medium">{order.templateName}</TableCell>
+                    <TableCell>{order.styleName}</TableCell>
+                    <TableCell>{order.artist}</TableCell>
+                    <TableCell>{order.title}</TableCell>
+                    <TableCell>
+                      {order.parental ? (
+                        <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {order.affiliate_id ?? "App"}
+                    </TableCell>
+                    <TableCell>
+                      ${order.price.toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className="text-xs" variant={getStatusBadgeVariant(order.status)}>
+                        {order.status}
+                      </Badge>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  orders.map((order) => {
-                    const orderId = String(order._id);
-                    return (
-                      <TableRow
-                        key={orderId}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => {
-                          console.log('Navigating to order:', orderId);
-                          router.push(`/orders/${orderId}`);
-                        }}
-                      >
-                      <TableCell className="text-sm">
-                        {formatDate(order.createdAt)}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {order.userEmail || "N/A"}
-                      </TableCell>
-                      <TableCell className="font-medium">{order.templateName}</TableCell>
-                      <TableCell>{order.styleName}</TableCell>
-                      <TableCell>{order.artist}</TableCell>
-                      <TableCell>{order.title}</TableCell>
-                      <TableCell>
-                        {order.parental ? (
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {order.affiliate_id ?? "App"}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        ${order.price.toFixed(2)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusBadgeVariant(order.status)}>
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-6 flex justify-center">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (page <= 3) {
-                      pageNum = i + 1;
-                    } else if (page >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = page - 2 + i;
-                    }
-
-                    return (
-                      <PaginationItem key={pageNum}>
-                        <PaginationLink
-                          onClick={() => setPage(pageNum)}
-                          isActive={page === pageNum}
-                          className="cursor-pointer"
-                        >
-                          {pageNum}
-                        </PaginationLink>
-                      </PaginationItem>
-                    );
-                  })}
-
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                      className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          )}
-        </>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   );
